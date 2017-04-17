@@ -1,6 +1,6 @@
 {
     "name": "datatables.net-colreorder",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "description": "ColReorder for DataTables ",
     "files": [
         "js/dataTables.colReorder.js"
