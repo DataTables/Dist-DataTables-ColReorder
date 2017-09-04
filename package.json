@@ -3,7 +3,7 @@
     "version": "1.4.0",
     "description": "ColReorder for DataTables ",
     "files": [
-        "js/dataTables.colReorder.js"
+        "js/**/*.js"
     ],
     "main": "./js/dataTables.colReorder.js",
     "keywords": [
