@@ -6,6 +6,7 @@
         "js/**/*.js"
     ],
     "main": "js/dataTables.colReorder.js",
+    "type": "types.d.ts",
     "keywords": [
         "reorder",
         "DataTables",
@@ -27,5 +28,8 @@
     "repository": {
         "type": "git",
         "url": "https://github.com/DataTables/Dist-DataTables-ColReorder.git"
+    },
+    "devDependencies": {
+        "@types/jquery": "^3.5.1"
     }
 }
