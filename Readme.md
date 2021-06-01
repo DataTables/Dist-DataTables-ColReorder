@@ -17,9 +17,15 @@ For inclusion of this library using a standard `<script>` tag, rather than using
 npm install datatables.net-colreorder
 ```
 
+ES3 Syntax
 ```
 var $ = require( 'jquery' );
 require( 'datatables.net-colreorder' )( window, $ );
+```
+
+ES6 Syntax
+```
+import 'datatables.net-colreorder'
 ```
 
 ### bower
