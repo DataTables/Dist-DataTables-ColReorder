@@ -3,13 +3,13 @@
     "description": "ColReorder for DataTables",
     "main": "js/dataTables.colReorder.js",
     "types": "./types/types.d.ts",
-    "version": "1.5.3",
+    "version": "1.5.4",
     "files": [
         "js/**/*.js"
     ],
     "keywords": [
         "ColReorder",
- "Reorder",
+        "Reorder",
         "Datatables",
         "jQuery",
         "table",
