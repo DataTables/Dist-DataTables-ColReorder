@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
-        <version>1.5.5</version>
+        <version>1.5.6</version>
         <id>datatables.net-colreorder</id>
         <description>This is ColReorder for DataTables</description>
         <repository type="git" url="https://github.com/DataTables/Dist-DataTables-ColReorder.git"/>
@@ -10,7 +10,7 @@
         <license type="expression">MIT</license>
         <tags>ColReorder  Reorder  Datatables jQuery table</tags>
         <dependencies>
-            <dependency id="datatables.net" version="1.11.5"/>
+            <dependency id="datatables.net" version="1.12.1"/>
         </dependencies>
         <contentFiles>
             <files include="**/*" buildAction="Content"/>

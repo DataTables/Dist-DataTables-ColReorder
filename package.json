@@ -3,7 +3,7 @@
     "description": "ColReorder for DataTables",
     "main": "js/dataTables.colReorder.js",
     "types": "./types/types.d.ts",
-    "version": "1.5.5",
+    "version": "1.5.6",
     "files": [
         "js/**/*.js",
         "types/**/*.d.ts"
@@ -18,7 +18,7 @@
         "sort"
     ],
     "dependencies": {
-        "datatables.net": ">=1.11.5",
+        "datatables.net": ">=1.12.1",
         "jquery": ">=1.7"
     },
     "moduleType": [
