@@ -1,5 +1,4 @@
-
-/*! ColReorder 1.6.0
+/*! ColReorder 1.6.1
  * ©2010-2022 SpryMedia Ltd - datatables.net/license
  */
 
@@ -46,7 +45,7 @@ var DataTable = $.fn.dataTable;
 /**
  * @summary     ColReorder
  * @description Provide the ability to reorder columns in a DataTable
- * @version     1.6.0
+ * @version     1.6.1
  * @author      SpryMedia Ltd (www.sprymedia.co.uk)
  * @contact     www.sprymedia.co.uk
  * @copyright   SpryMedia Ltd.
@@ -1395,7 +1394,7 @@ ColReorder.defaults = {
  *  @type      String
  *  @default   As code
  */
-ColReorder.version = "1.6.0";
+ColReorder.version = "1.6.1";
 
 
 
