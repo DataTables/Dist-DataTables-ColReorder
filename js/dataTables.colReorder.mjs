@@ -6,7 +6,6 @@ import $ from 'jquery';
 import DataTable from 'datatables.net';
 
 
-
 /**
  * @summary     ColReorder
  * @description Provide the ability to reorder columns in a DataTable
