@@ -1,4 +1,4 @@
-/*! ColReorder 2.0.1
+/*! ColReorder 2.0.2
  * © SpryMedia Ltd - datatables.net/license
  */
 
@@ -838,17 +838,17 @@ var ColReorder = /** @class */ (function () {
         enable: true,
         order: null
     };
-    ColReorder.version = '2.0.1';
+    ColReorder.version = '2.0.2';
     return ColReorder;
 }());
 
-/*! ColReorder 2.0.1
+/*! ColReorder 2.0.2
  * © SpryMedia Ltd - datatables.net/license
  */
 /**
  * @summary     ColReorder
  * @description Provide the ability to reorder columns in a DataTable
- * @version     2.0.1
+ * @version     2.0.2
  * @author      SpryMedia Ltd
  * @contact     datatables.net
  * @copyright   SpryMedia Ltd.
