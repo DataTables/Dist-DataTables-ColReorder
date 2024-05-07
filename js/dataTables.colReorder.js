@@ -332,6 +332,9 @@ function structureFill(structure) {
             var cell = structure[row][col];
             if (cell) {
                 for (var rowInner = 0; rowInner < cell.rowspan; rowInner++) {
+                    if (!filledIn[row + rowInner]) {
+                        filledIn[row + rowInner] = [];
+                    }
                     for (var colInner = 0; colInner < cell.colspan; colInner++) {
                         filledIn[row + rowInner][col + colInner] = cell.cell;
                     }
