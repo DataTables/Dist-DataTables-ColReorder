@@ -656,13 +656,16 @@ var ColReorder = /** @class */ (function () {
             return parseInt(val, 10);
         });
         this._regions(this.s.mouse.targets);
+        var visibleTargets = this.s.mouse.targets.filter(function (val) {
+            return that.dt.column(val).visible();
+        });
         // If the column being moved is smaller than the column it is replacing,
         // the drop zones might need a correction to allow for this since, otherwise
         // we might immediately be changing the column order as soon as it was placed.
         // Find the drop zone for the first in the list of targets - is its
         // left greater than the mouse position. If so, it needs correcting
         var dz = this.s.dropZones.find(function (zone) {
-            return zone.colIdx === that.s.mouse.targets[0];
+            return zone.colIdx === visibleTargets[0];
         });
         var dzIdx = this.s.dropZones.indexOf(dz);
         if (dz.left > cursorMouseLeft) {
@@ -676,7 +679,7 @@ var ColReorder = /** @class */ (function () {
         }
         // And for the last in the list
         dz = this.s.dropZones.find(function (zone) {
-            return zone.colIdx === that.s.mouse.targets[that.s.mouse.targets.length - 1];
+            return zone.colIdx === visibleTargets[visibleTargets.length - 1];
         });
         if (dz.left + dz.width < cursorMouseLeft) {
             var nextDiff = cursorMouseLeft - (dz.left + dz.width);
