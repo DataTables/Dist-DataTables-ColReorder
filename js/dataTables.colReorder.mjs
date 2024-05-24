@@ -221,6 +221,10 @@ function move(dt, from, to) {
  * @param order Array to update
  */
 function orderingIndexes(map, order) {
+    // Can happen if the order was deleted from a saved state
+    if (!order) {
+        return;
+    }
     for (var i = 0; i < order.length; i++) {
         var el = order[i];
         if (typeof el === 'number') {
