@@ -922,12 +922,14 @@ $(document).on('stateLoadInit.dt', function (e, settings, state) {
             // State's ordering indexes
             orderingIndexes(state.colReorder, state.order);
             // State's columns array - sort by restore index
-            for (var i = 0; i < state.columns.length; i++) {
-                state.columns[i]._cr_sort = state.colReorder[i];
+            if (state.columns) {
+                for (var i = 0; i < state.columns.length; i++) {
+                    state.columns[i]._cr_sort = state.colReorder[i];
+                }
+                state.columns.sort(function (a, b) {
+                    return a._cr_sort - b._cr_sort;
+                });
             }
-            state.columns.sort(function (a, b) {
-                return a._cr_sort - b._cr_sort;
-            });
         }
     }
 });
