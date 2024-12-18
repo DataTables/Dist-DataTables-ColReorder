@@ -655,10 +655,19 @@ var ColReorder = /** @class */ (function () {
             top: this._cursorPosition(e, 'pageY') - this.s.mouse.offset.y
         });
         // Find cursor's left position relative to the table
-        var tableOffset = $(this.dt.table().node()).offset().left;
+        var tableNode = this.dt.table().node();
+        var tableOffset = $(tableNode).offset().left;
         var cursorMouseLeft = this._cursorPosition(e, 'pageX') - tableOffset;
+        var cursorInlineStart;
+        if (this._isRtl()) {
+            var tableWidth = tableNode.clientWidth;
+            cursorInlineStart = tableWidth - cursorMouseLeft;
+        }
+        else {
+            cursorInlineStart = cursorMouseLeft;
+        }
         var dropZone = this.s.dropZones.find(function (zone) {
-            if (zone.left <= cursorMouseLeft && cursorMouseLeft <= zone.left + zone.width) {
+            if (zone.inlineStart <= cursorInlineStart && cursorInlineStart <= zone.inlineStart + zone.width) {
                 return true;
             }
             return false;
@@ -668,7 +677,7 @@ var ColReorder = /** @class */ (function () {
             return;
         }
         if (!dropZone.self) {
-            this._move(dropZone, cursorMouseLeft);
+            this._move(dropZone, cursorInlineStart);
         }
     };
     ColReorder.prototype._mouseUp = function (e) {
@@ -701,9 +710,9 @@ var ColReorder = /** @class */ (function () {
      * Shift columns around
      *
      * @param dropZone Where to move to
-     * @param cursorMouseLeft Cursor position, relative to the left of the table
+     * @param cursorInlineStart Cursor position, relative to the inline start (left or right) of the table
      */
-    ColReorder.prototype._move = function (dropZone, cursorMouseLeft) {
+    ColReorder.prototype._move = function (dropZone, cursorInlineStart) {
         var that = this;
         this.dt.colReorder.move(this.s.mouse.targets, dropZone.colIdx);
         // Update the targets
@@ -726,10 +735,10 @@ var ColReorder = /** @class */ (function () {
             return zone.colIdx === visibleTargets[0];
         });
         var dzIdx = this.s.dropZones.indexOf(dz);
-        if (dz.left > cursorMouseLeft) {
-            var previousDiff = dz.left - cursorMouseLeft;
+        if (dz.inlineStart > cursorInlineStart) {
+            var previousDiff = dz.inlineStart - cursorInlineStart;
             var previousDz = this.s.dropZones[dzIdx - 1];
-            dz.left -= previousDiff;
+            dz.inlineStart -= previousDiff;
             dz.width += previousDiff;
             if (previousDz) {
                 previousDz.width -= previousDiff;
@@ -739,12 +748,12 @@ var ColReorder = /** @class */ (function () {
         dz = this.s.dropZones.find(function (zone) {
             return zone.colIdx === visibleTargets[visibleTargets.length - 1];
         });
-        if (dz.left + dz.width < cursorMouseLeft) {
-            var nextDiff = cursorMouseLeft - (dz.left + dz.width);
+        if (dz.inlineStart + dz.width < cursorInlineStart) {
+            var nextDiff = cursorInlineStart - (dz.inlineStart + dz.width);
             var nextDz = this.s.dropZones[dzIdx + 1];
             dz.width += nextDiff;
             if (nextDz) {
-                nextDz.left += nextDiff;
+                nextDz.inlineStart += nextDiff;
                 nextDz.width -= nextDiff;
             }
         }
@@ -778,7 +787,7 @@ var ColReorder = /** @class */ (function () {
                 // by the final condition in this logic set
                 dropZones.push({
                     colIdx: colIdx,
-                    left: totalWidth - negativeCorrect,
+                    inlineStart: totalWidth - negativeCorrect,
                     self: moveColumns[0] <= colIdx && colIdx <= moveColumns[moveColumns.length - 1],
                     width: columnWidth + negativeCorrect
                 });
@@ -854,6 +863,9 @@ var ColReorder = /** @class */ (function () {
     // 		);
     // 	}
     // }
+    ColReorder.prototype._isRtl = function () {
+        return $(this.dt.table()).css('direction') === 'rtl';
+    };
     ColReorder.defaults = {
         columns: '',
         enable: true,
