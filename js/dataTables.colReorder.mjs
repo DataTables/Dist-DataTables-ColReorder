@@ -1,4 +1,4 @@
-/*! ColReorder 2.0.4
+/*! ColReorder 2.1.0-dev
  * © SpryMedia Ltd - datatables.net/license
  */
 
@@ -413,6 +413,7 @@ var ColReorder = /** @class */ (function () {
         this.c = {
             columns: null,
             enable: null,
+            headerRows: null,
             order: null
         };
         this.s = {
@@ -463,10 +464,13 @@ var ColReorder = /** @class */ (function () {
         }
         dt.table()
             .header.structure()
-            .forEach(function (row) {
+            .forEach(function (row, rowIdx) {
+            var headerRows = opts.headerRows;
             for (var i = 0; i < row.length; i++) {
-                if (row[i] && row[i].cell) {
-                    that._addListener(row[i].cell);
+                if (!headerRows || headerRows.includes(rowIdx)) {
+                    if (row[i] && row[i].cell) {
+                        that._addListener(row[i].cell);
+                    }
                 }
             }
         });
@@ -829,19 +833,20 @@ var ColReorder = /** @class */ (function () {
     ColReorder.defaults = {
         columns: '',
         enable: true,
+        headerRows: null,
         order: null
     };
-    ColReorder.version = '2.0.4';
+    ColReorder.version = '2.1.0-dev';
     return ColReorder;
 }());
 
-/*! ColReorder 2.0.4
+/*! ColReorder 2.1.0-dev
  * © SpryMedia Ltd - datatables.net/license
  */
 /**
  * @summary     ColReorder
  * @description Provide the ability to reorder columns in a DataTable
- * @version     2.0.4
+ * @version     2.1.0-dev
  * @author      SpryMedia Ltd
  * @contact     datatables.net
  * @copyright   SpryMedia Ltd.
