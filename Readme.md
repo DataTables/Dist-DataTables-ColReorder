@@ -1,6 +1,6 @@
 # ColReorder for DataTables 
 
-This package contains distribution files for the [ColReorder extension](https://datatables.net/extensions/colreorder) for [DataTables](https://datatables.net/). Only the core software for this library is contained in this package - to be correctly styled, a styling package for ColReorder must also be included. Styling options include DataTable's native styling, [Bootstrap](http://getbootstrap.com) and [Foundation](http://foundation.zurb.com/).
+This is the distribution package for the [ColReorder extension](https://datatables.net/extensions/colreorder) for [DataTables](https://datatables.net/). Only the core software for this library is contained in this package - to be correctly styled, a styling package for ColReorder must also be included. Please see the [npm installation documentation on the DataTables site](https://datatables.net/manual/installation#Node.js-/-NPM) for full details.
 
 ColReorder allows the end user to modify the column order of a table through drop-and-drag of column headers.
 
@@ -9,41 +9,36 @@ ColReorder allows the end user to modify the column order of a table through dro
 
 ### Browser
 
-For inclusion of this library using a standard `<script>` tag, rather than using this package, it is recommended that you use the [DataTables download builder](//datatables.net/download) which can create CDN or locally hosted packages for you, will all dependencies satisfied.
+To use DataTables with a simple `<script>` tag, rather than using this package, it is recommended that you use the [DataTables download builder](//datatables.net/download) which can create CDN or locally hosted packages for you, will all dependencies satisfied.
 
 ### npm
 
+For installation via npm, yarn and other similar package managers, install this package with your package manager - e.g.:
+
 ```
+npm install datatables.net
 npm install datatables.net-colreorder
 ```
 
-ES3 Syntax
-```
-var $ = require( 'jquery' );
-require( 'datatables.net-colreorder' )( window, $ );
-```
+Then, to load and initialise DataTables and ColReorder in your code use:
 
-ES6 Syntax
 ```
+import DataTable from 'datatables.net';
 import 'datatables.net-colreorder'
-```
 
-### bower
-
+new DataTable('#myTable', {
+    // initalisation options
+});
 ```
-bower install --save datatables.net-colreorder
-```
-
 
 
 ## Documentation
 
-Full documentation and examples for ColReorder can be found [on the website](https://datatables.net/extensions/colreorder).
+Full documentation and examples for ColReorder can be found [on the DataTables website](https://datatables.net/extensions/colreorder).
 
 ## Bug / Support
 
 Support for DataTables is available through the [DataTables forums](//datatables.net/forums) and [commercial support options](//datatables.net/support) are available.
-
 
 ### Contributing
 
