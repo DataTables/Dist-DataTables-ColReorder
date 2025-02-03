@@ -792,12 +792,16 @@ var ColReorder = /** @class */ (function () {
             return;
         }
         var that = this;
-        var tableLeft = $(this.dt.table().container()).position().left;
+        var tableLeft = $(this.dt.table().container()).offset().left;
         var tableWidth = $(this.dt.table().container()).outerWidth();
         var mouseBuffer = 75;
         var scrollContainer = this.dt.table().body().parentElement.parentElement;
         this.s.scrollInterval = setInterval(function () {
             var mouseLeft = that.s.mouse.absLeft;
+            // On initial mouse down the mouse position can be -1, which we want to ignore
+            if (mouseLeft === -1) {
+                return;
+            }
             if (mouseLeft < tableLeft + mouseBuffer && scrollContainer.scrollLeft) {
                 scrollContainer.scrollLeft -= 5;
             }
