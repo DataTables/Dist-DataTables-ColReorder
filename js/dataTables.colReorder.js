@@ -987,7 +987,7 @@ $(document).on('stateLoadInit.dt', function (e, settings, state) {
         return;
     }
     var dt = new DataTable.Api(settings);
-    if (state.colReorder) {
+    if (state.colReorder && dt.columns().count() === state.colReorder.length) {
         if (dt.ready()) {
             // Table is fully loaded - do the column reordering here
             // so that the stored indexes are in the correct place
