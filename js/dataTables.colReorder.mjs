@@ -454,7 +454,7 @@ var ColReorder = /** @class */ (function () {
         // Initial ordering / state restoring
         var loaded = dt.state.loaded();
         var order = this.c.order;
-        if (loaded && loaded.colReorder) {
+        if (loaded && loaded.colReorder && dt.columns().count() === loaded.colReorder.length) {
             order = loaded.colReorder;
         }
         if (order) {
