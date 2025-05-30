@@ -10,6 +10,6 @@
         "types/types.d.ts"
     ],
     "src-repo": "http://github.com/DataTables/ColReorder",
-    "last-tag": "2.1.0",
+    "last-tag": "2.1.1",
     "last-sync": "6a9a178d713c0d7d3379651ce622900527dc4e35"
 }
