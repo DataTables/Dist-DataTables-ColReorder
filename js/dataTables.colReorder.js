@@ -878,7 +878,7 @@ var ColReorder = /** @class */ (function () {
     // 	}
     // }
     ColReorder.prototype._isRtl = function () {
-        return $(this.dt.table()).css('direction') === 'rtl';
+        return $(this.dt.table().node()).css('direction') === 'rtl';
     };
     ColReorder.defaults = {
         columns: '',
