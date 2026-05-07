@@ -1,12 +1,8 @@
-/*! ColReorder 2.1.2
- * © SpryMedia Ltd - datatables.net/license
+/*! ColReorder 3.0.0-beta.1 for DataTables
+ * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
-import jQuery from 'jquery';
-import DataTable from 'datatables.net';
-
-// Allow reassignment of the $ variable
-let $ = jQuery;
+import DataTable, { util, Dom, Api } from 'datatables.net';
 
 /**
  * Mutate an array, moving a set of elements into a new index position
@@ -17,7 +13,7 @@ let $ = jQuery;
  * @param to Index where the start element will move to
  */
 function arrayMove(arr, from, count, to) {
-    var movers = arr.splice(from, count);
+    let movers = arr.splice(from, count);
     // Add delete and start to the array, so we can use it for the `apply`
     movers.unshift(0); // splice delete param
     movers.unshift(to < from ? to : to - count + 1); // splice start param
@@ -39,7 +35,7 @@ function finalise(dt) {
     dt.column(0).visible(dt.column(0).visible());
     dt.columns.adjust();
     // Fire an event so other plug-ins can update
-    var order = dt.colReorder.order();
+    let order = dt.colReorder.order();
     dt.trigger('columns-reordered', [
         {
             order: order,
@@ -54,7 +50,7 @@ function finalise(dt) {
  * @returns Original indexes in current order
  */
 function getOrder(dt) {
-    return dt.settings()[0].aoColumns.map(function (col) {
+    return dt.settings()[0].columns.map(function (col) {
         return col._crOriginalIdx;
     });
 }
@@ -63,19 +59,19 @@ function getOrder(dt) {
  * the columns.
  */
 function headerUpdate(structure, map, from, to) {
-    var done = [];
-    for (var i = 0; i < structure.length; i++) {
-        var headerRow = structure[i];
+    let done = [];
+    for (let i = 0; i < structure.length; i++) {
+        let headerRow = structure[i];
         arrayMove(headerRow, from[0], from.length, to);
-        for (var j = 0; j < headerRow.length; j++) {
-            var cell = headerRow[j].cell;
+        for (let j = 0; j < headerRow.length; j++) {
+            let cell = headerRow[j].cell;
             // Only work on a DOM element once, otherwise we risk remapping a
             // remapped value (etc).
             if (done.includes(cell)) {
                 continue;
             }
-            var indexes = cell.getAttribute('data-dt-column').split(',');
-            var mapped = indexes
+            let indexes = cell.getAttribute('data-dt-column').split(',');
+            let mapped = indexes
                 .map(function (idx) {
                 return map[idx];
             })
@@ -97,7 +93,7 @@ function init(api) {
     // index order will be the original order, so this is quite a simple
     // assignment.
     api.columns().iterator('column', function (s, idx) {
-        var columns = s.aoColumns;
+        let columns = s.columns;
         if (columns[idx]._crOriginalIdx === undefined) {
             columns[idx]._crOriginalIdx = idx;
         }
@@ -110,11 +106,18 @@ function init(api) {
  *  @param   array arr Array to switch around
  */
 function invertKeyValues(arr) {
-    var result = [];
-    for (var i = 0; i < arr.length; i++) {
+    let result = [];
+    for (let i = 0; i < arr.length; i++) {
         result[arr[i]] = i;
     }
     return result;
+}
+function transposeArray(arr, inverted) {
+    for (let i = 0; i < arr.length; i++) {
+        arr[i] = inverted[arr[i]];
+    }
+    arr.sort();
+    return arr;
 }
 /**
  * Move one or more columns from one index to another.
@@ -128,10 +131,10 @@ function invertKeyValues(arr) {
  * @param to Destination index (starting if multiple)
  */
 function move(dt, from, to) {
-    var i, j;
-    var settings = dt.settings()[0];
-    var columns = settings.aoColumns;
-    var newOrder = columns.map(function (col, idx) {
+    let i, j;
+    let settings = dt.settings()[0];
+    let columns = settings.columns;
+    let newOrder = columns.map(function (col, idx) {
         return idx;
     });
     // The to column in already inside the from column(s) (might be the same)
@@ -141,17 +144,17 @@ function move(dt, from, to) {
     }
     // A reverse index array so we can look up new indexes from old
     arrayMove(newOrder, from[0], from.length, to);
-    var reverseIndexes = invertKeyValues(newOrder);
+    let reverseIndexes = invertKeyValues(newOrder);
     // Main column
     arrayMove(columns, from[0], from.length, to);
     // Per row manipulations
-    for (i = 0; i < settings.aoData.length; i++) {
-        var data = settings.aoData[i];
+    for (i = 0; i < settings.data.length; i++) {
+        var data = settings.data[i];
         // Allow for sparse array
         if (!data) {
             continue;
         }
-        var cells = data.anCells;
+        var cells = data.cells;
         // Not yet rendered
         if (!cells) {
             continue;
@@ -160,8 +163,8 @@ function move(dt, from, to) {
         arrayMove(cells, from[0], from.length, to);
         for (j = 0; j < cells.length; j++) {
             // Reinsert into the document in the new order
-            if (data.nTr && cells[j] && columns[j].bVisible) {
-                data.nTr.appendChild(cells[j]);
+            if (data.tr && cells[j] && columns[j].visible) {
+                data.tr.appendChild(cells[j]);
             }
             // Update lookup index
             if (cells[j] && cells[j]._DT_CellIndex) {
@@ -171,37 +174,73 @@ function move(dt, from, to) {
     }
     // Per column manipulation
     for (i = 0; i < columns.length; i++) {
-        var column = columns[i];
+        let column = columns[i];
         // Data column sorting
-        for (j = 0; j < column.aDataSort.length; j++) {
-            column.aDataSort[j] = reverseIndexes[column.aDataSort[j]];
-        }
+        transposeArray(column.orderData, reverseIndexes);
         // Update the column indexes
         column.idx = reverseIndexes[column.idx];
         // Reorder the colgroup > col elements for the new order
-        if (column.bVisible) {
+        if (column.visible) {
             settings.colgroup.append(column.colEl);
         }
     }
     // Header and footer
-    headerUpdate(settings.aoHeader, reverseIndexes, from, to);
-    headerUpdate(settings.aoFooter, reverseIndexes, from, to);
-    // Search - columns
-    arrayMove(settings.aoPreSearchCols, from[0], from.length, to);
+    headerUpdate(settings.header, reverseIndexes, from, to);
+    headerUpdate(settings.footer, reverseIndexes, from, to);
+    // Search - core. Here the `searches` object is keyed by the columns that
+    // the search applies to, which needs to be updated, but also there is a
+    // `columns` array for each property which must also be updated.
+    util.object.each(settings.searches, (key, search) => {
+        let columns = transposeArray(search.columns, reverseIndexes);
+        // In case there is an overlap between those which have been reordered
+        // and those still to be done, we need to use a name that indicates that
+        // it has been reordered
+        if (key !== '*') {
+            settings.searches[columns.join(',') + '-transposed'] = search;
+            delete settings.searches[key];
+        }
+    });
+    // And then delete the transposed ones
+    util.object.each(settings.searches, (key, search) => {
+        if (key.includes('-transposed')) {
+            settings.searches[key.replace('-transposed', '')] = search;
+            delete settings.searches[key];
+        }
+    });
+    // Search - fixed. Similar to `searches` but there is an inner object that
+    // is keyed by the name of the fixed search.
+    util.object.each(settings.searchesFixed, (key, fixed) => {
+        util.object.each(settings.searchesFixed[key], (name, search) => {
+            transposeArray(search.columns, reverseIndexes);
+        });
+        // Top level object is named by columns
+        if (key !== '*') {
+            settings.searchesFixed[key + '-transposed'] = settings.searchesFixed[key];
+            delete settings.searchesFixed[key];
+        }
+    });
+    // And then delete the transposed ones
+    util.object.each(settings.searchesFixed, (key, fixed) => {
+        if (key.includes('-transposed')) {
+            let first = fixed[Object.keys(fixed)[0]];
+            settings.searchesFixed[first.columns.join(',')] = fixed;
+            delete settings.searchesFixed[key];
+        }
+    });
     // Ordering indexes update - note that the sort listener on the
     // header works out the index to apply on each draw, so it doesn't
     // need to be updated here.
-    orderingIndexes(reverseIndexes, settings.aaSorting);
-    if (Array.isArray(settings.aaSortingFixed)) {
-        orderingIndexes(reverseIndexes, settings.aaSortingFixed);
+    orderingIndexes(reverseIndexes, settings.order);
+    if (Array.isArray(settings.orderFixed)) {
+        orderingIndexes(reverseIndexes, settings.orderFixed);
     }
-    else if (settings.aaSortingFixed.pre) {
-        orderingIndexes(reverseIndexes, settings.aaSortingFixed.pre);
+    else if (settings.orderFixed.pre) {
+        orderingIndexes(reverseIndexes, settings.orderFixed.pre);
     }
-    else if (settings.aaSortingFixed.post) {
-        orderingIndexes(reverseIndexes, settings.aaSortingFixed.pre);
+    else if (settings.orderFixed.post) {
+        orderingIndexes(reverseIndexes, settings.orderFixed.pre);
     }
-    settings.aLastSort.forEach(function (el) {
+    settings.lastOrder.forEach(function (el) {
         el.src = reverseIndexes[el.src];
     });
     // Fire an event so other plug-ins can update
@@ -225,13 +264,13 @@ function orderingIndexes(map, order) {
     if (!order) {
         return;
     }
-    for (var i = 0; i < order.length; i++) {
-        var el = order[i];
+    for (let i = 0; i < order.length; i++) {
+        let el = order[i];
         if (typeof el === 'number') {
             // Just a number
             order[i] = map[el];
         }
-        else if ($.isPlainObject(el) && el.idx !== undefined) {
+        else if (util.is.plainObject(el) && el.idx !== undefined) {
             // New index in an object style
             el.idx = map[el.idx];
         }
@@ -250,8 +289,8 @@ function orderingIndexes(map, order) {
  * @param order Indexes from current order, positioned as you want them to be
  */
 function setOrder(dt, order, original) {
-    var changed = false;
-    var i;
+    let changed = false;
+    let i;
     if (order.length !== dt.columns().count()) {
         dt.error('ColReorder - column count mismatch');
         return;
@@ -264,10 +303,10 @@ function setOrder(dt, order, original) {
     }
     // The API is array index as the desired position, but our algorithm below is
     // for array index as the current position. So we need to invert for it to work.
-    var setOrder = invertKeyValues(order);
+    let setOrder = invertKeyValues(order);
     // Move columns, one by one with validation disabled!
     for (i = 0; i < setOrder.length; i++) {
-        var currentIndex = setOrder.indexOf(i);
+        let currentIndex = setOrder.indexOf(i);
         if (i !== currentIndex) {
             // Reorder our switching error
             arrayMove(setOrder, currentIndex, 1, i);
@@ -289,17 +328,17 @@ function setOrder(dt, order, original) {
  * @returns 2D array of header cells
  */
 function structureFill(structure) {
-    var filledIn = [];
-    for (var row = 0; row < structure.length; row++) {
+    let filledIn = [];
+    for (let row = 0; row < structure.length; row++) {
         filledIn.push([]);
-        for (var col = 0; col < structure[row].length; col++) {
-            var cell = structure[row][col];
+        for (let col = 0; col < structure[row].length; col++) {
+            let cell = structure[row][col];
             if (cell) {
-                for (var rowInner = 0; rowInner < cell.rowspan; rowInner++) {
+                for (let rowInner = 0; rowInner < cell.rowspan; rowInner++) {
                     if (!filledIn[row + rowInner]) {
                         filledIn[row + rowInner] = [];
                     }
-                    for (var colInner = 0; colInner < cell.colspan; colInner++) {
+                    for (let colInner = 0; colInner < cell.colspan; colInner++) {
                         filledIn[row + rowInner][col + colInner] = cell.cell;
                     }
                 }
@@ -318,7 +357,7 @@ function structureFill(structure) {
  */
 function transpose(dt, idx, dir) {
     var order = dt.colReorder.order();
-    var columns = dt.settings()[0].aoColumns;
+    var columns = dt.settings()[0].columns;
     if (dir === 'toCurrent' || dir === 'fromOriginal') {
         // Given an original index, want the current
         return !Array.isArray(idx)
@@ -344,7 +383,7 @@ function transpose(dt, idx, dir) {
  * @returns Validation result
  */
 function validateMove(table, from, to) {
-    var columns = table.columns().count();
+    let columns = table.columns().count();
     // Sanity and bound checking
     if (from[0] < to && to < from[from.length]) {
         return false;
@@ -375,17 +414,17 @@ function validateMove(table, from, to) {
  * @returns
  */
 function validateStructureMove(structure, from, to) {
-    var header = structureFill(structure);
-    var i;
+    let header = structureFill(structure);
+    let i;
     // Shuffle the header cells around
     for (i = 0; i < header.length; i++) {
         arrayMove(header[i], from[0], from.length, to);
     }
     // Sanity check that the headers are next to each other
     for (i = 0; i < header.length; i++) {
-        var seen = [];
-        for (var j = 0; j < header[i].length; j++) {
-            var cell = header[i][j];
+        let seen = [];
+        for (let j = 0; j < header[i].length; j++) {
+            let cell = header[i][j];
             if (!seen.includes(cell)) {
                 // Hasn't been seen before
                 seen.push(cell);
@@ -399,14 +438,29 @@ function validateStructureMove(structure, from, to) {
     return true;
 }
 
+// Sanity check
+if (!DataTable.versionCheck('3')) {
+    throw 'Warning: ColReorder requires DataTables 3 or newer';
+}
 /**
  * This is one possible UI for column reordering in DataTables. In this case
  * columns are reordered by clicking and dragging a column header. It calculates
  * where columns can be dropped based on the column header used to start the drag
  * and then `colReorder.move()` method to alter the DataTable.
  */
-var ColReorder = /** @class */ (function () {
-    function ColReorder(dt, opts) {
+class ColReorder {
+    disable() {
+        this.c.enable = false;
+        return this;
+    }
+    enable(flag = true) {
+        if (flag === false) {
+            return this.disable();
+        }
+        this.c.enable = true;
+        return this;
+    }
+    constructor(dt, opts) {
         this.dom = {
             drag: null
         };
@@ -433,8 +487,7 @@ var ColReorder = /** @class */ (function () {
             },
             scrollInterval: null
         };
-        var that = this;
-        var ctx = dt.settings()[0];
+        let ctx = dt.settings()[0];
         // Check if ColReorder already has been initialised on this DataTable - only
         // one can exist.
         if (ctx._colReorder) {
@@ -442,7 +495,7 @@ var ColReorder = /** @class */ (function () {
         }
         dt.settings()[0]._colReorder = this;
         this.dt = dt;
-        $.extend(this.c, ColReorder.defaults, opts);
+        util.object.assign(this.c, ColReorder.defaults, opts);
         init(dt);
         dt.on('stateSaveParams', function (e, s, d) {
             d.colReorder = getOrder(dt);
@@ -452,8 +505,8 @@ var ColReorder = /** @class */ (function () {
             dt.colReorder.reset();
         });
         // Initial ordering / state restoring
-        var loaded = dt.state.loaded();
-        var order = this.c.order;
+        let loaded = dt.state.loaded();
+        let order = this.c.order;
         if (loaded && loaded.colReorder && dt.columns().count() === loaded.colReorder.length) {
             order = loaded.colReorder;
         }
@@ -464,37 +517,25 @@ var ColReorder = /** @class */ (function () {
         }
         dt.table()
             .header.structure()
-            .forEach(function (row, rowIdx) {
-            var headerRows = opts.headerRows;
-            for (var i = 0; i < row.length; i++) {
+            .forEach((row, rowIdx) => {
+            let headerRows = this.c.headerRows;
+            for (let i = 0; i < row.length; i++) {
                 if (!headerRows || headerRows.includes(rowIdx)) {
                     if (row[i] && row[i].cell) {
-                        that._addListener(row[i].cell);
+                        this._addListener(row[i].cell);
                     }
                 }
             }
         });
     }
-    ColReorder.prototype.disable = function () {
-        this.c.enable = false;
-        return this;
-    };
-    ColReorder.prototype.enable = function (flag) {
-        if (flag === void 0) { flag = true; }
-        if (flag === false) {
-            return this.disable();
-        }
-        this.c.enable = true;
-        return this;
-    };
     /**
      * Attach the mouse down listener to an element to start a column reorder action
      *
      * @param el
      */
-    ColReorder.prototype._addListener = function (el) {
-        var that = this;
-        $(el)
+    _addListener(el) {
+        let that = this;
+        Dom.s(el)
             .on('selectstart.colReorder', function () {
             return false;
         })
@@ -509,38 +550,37 @@ var ColReorder = /** @class */ (function () {
             }
             // ColumnControl integration - if there is a CC reorder button in the header
             // then the mousedown is limited to that
-            var btn = $('button.dtcc-button_reorder', this);
-            if (btn.length && e.target !== btn[0] && btn.find(e.target).length === 0) {
+            let btn = Dom.s(this).find('button.dtcc-button_reorder');
+            if (btn.count() && e.target !== btn.get(0) && btn.find(e.target).count() === 0) {
                 return;
             }
             that._mouseDown(e, this);
         });
-    };
+    }
     /**
      * Create the element that is dragged around the page
      */
-    ColReorder.prototype._createDragNode = function () {
-        var origCell = this.s.mouse.target;
-        var origTr = origCell.parent();
-        var origThead = origTr.parent();
-        var origTable = origThead.parent();
-        var cloneCell = origCell.clone();
+    _createDragNode() {
+        let origCell = this.s.mouse.target;
+        let origTr = origCell.parent();
+        let origThead = origTr.parent();
+        let origTable = origThead.parent();
+        let cloneCell = origCell.clone();
         // This is a slightly odd combination of jQuery and DOM, but it is the
         // fastest and least resource intensive way I could think of cloning
         // the table with just a single header cell in it.
-        this.dom.drag = $(origTable[0].cloneNode(false))
-            .addClass('dtcr-cloned')
-            .append($(origThead[0].cloneNode(false)).append($(origTr[0].cloneNode(false)).append(cloneCell[0])) // Not sure why  it doesn't want to append a jQuery node
-        )
+        this.dom.drag = Dom.s(origTable.get(0).cloneNode(false))
+            .classAdd('dtcr-cloned')
+            .append(Dom.s(origThead.get(0).cloneNode(false)).append(Dom.s(origTr.get(0).cloneNode(false)).append(cloneCell.get(0))))
             .css({
             position: 'absolute',
-            top: 0,
-            left: 0,
-            width: $(origCell).outerWidth(),
-            height: $(origCell).outerHeight()
+            top: '0',
+            left: '0',
+            width: origCell.width('outer') + 'px',
+            height: origCell.height('outer') + 'px'
         })
             .appendTo('body');
-    };
+    }
     /**
      * Get cursor position regardless of mouse or touch input
      *
@@ -548,9 +588,9 @@ var ColReorder = /** @class */ (function () {
      * @param prop Property name to get
      * @returns Value - assuming a number here
      */
-    ColReorder.prototype._cursorPosition = function (e, prop) {
+    _cursorPosition(e, prop) {
         return e.type.indexOf('touch') !== -1 ? e.originalEvent.touches[0][prop] : e[prop];
-    };
+    }
     /**
      * Cache values at start
      *
@@ -558,19 +598,18 @@ var ColReorder = /** @class */ (function () {
      * @param cell Cell that the action started on
      * @returns
      */
-    ColReorder.prototype._mouseDown = function (e, cell) {
-        var _this = this;
-        var target = $(e.target).closest('th, td');
-        var offset = target.offset();
-        var moveableColumns = this.dt.columns(this.c.columns).indexes().toArray();
-        var moveColumnIndexes = $(cell)
+    _mouseDown(e, cell) {
+        let target = Dom.s(e.target).closest('th, td');
+        let offset = target.offset();
+        let moveableColumns = this.dt.columns(this.c.columns).indexes().toArray();
+        let moveColumnIndexes = Dom.s(cell)
             .attr('data-dt-column')
             .split(',')
             .map(function (val) {
             return parseInt(val, 10);
         });
         // Don't do anything for columns which are not selected as moveable
-        for (var j = 0; j < moveColumnIndexes.length; j++) {
+        for (let j = 0; j < moveColumnIndexes.length; j++) {
             if (!moveableColumns.includes(moveColumnIndexes[j])) {
                 return false;
             }
@@ -582,32 +621,32 @@ var ColReorder = /** @class */ (function () {
         this.s.mouse.target = target;
         this.s.mouse.targets = moveColumnIndexes;
         // Classes to highlight the columns being moved
-        for (var i = 0; i < moveColumnIndexes.length; i++) {
-            var cells = this.dt
+        for (let i = 0; i < moveColumnIndexes.length; i++) {
+            let cells = Dom.s(this.dt
                 .cells(null, moveColumnIndexes[i], { page: 'current' })
                 .nodes()
-                .to$();
-            var klass = 'dtcr-moving';
+                .toArray());
+            let klass = 'dtcr-moving';
             if (i === 0) {
                 klass += ' dtcr-moving-first';
             }
             if (i === moveColumnIndexes.length - 1) {
                 klass += ' dtcr-moving-last';
             }
-            cells.addClass(klass);
+            cells.classAdd(klass);
         }
         this._regions(moveColumnIndexes);
         this._scrollRegions();
         /* Add event handlers to the document */
-        $(document)
-            .on('mousemove.colReorder touchmove.colReorder', function (e) {
-            _this._mouseMove(e);
+        Dom.s(document)
+            .on('mousemove.colReorder touchmove.colReorder', (e) => {
+            this._mouseMove(e);
         })
-            .on('mouseup.colReorder touchend.colReorder', function (e) {
-            _this._mouseUp(e);
+            .on('mouseup.colReorder touchend.colReorder', (e) => {
+            this._mouseUp(e);
         });
-    };
-    ColReorder.prototype._mouseMove = function (e) {
+    }
+    _mouseMove(e) {
         if (this.dom.drag === null) {
             // Only create the drag element if the mouse has moved a specific distance from the start
             // point - this allows the user to make small mouse movements when sorting and not have a
@@ -616,7 +655,7 @@ var ColReorder = /** @class */ (function () {
                 Math.pow(this._cursorPosition(e, 'pageY') - this.s.mouse.start.y, 2), 0.5) < 5) {
                 return;
             }
-            $(document.body).addClass('dtcr-dragging');
+            Dom.s(document.body).classAdd('dtcr-dragging');
             this._createDragNode();
         }
         // Position the element - we respect where in the element the click occurred
@@ -625,18 +664,18 @@ var ColReorder = /** @class */ (function () {
             top: this._cursorPosition(e, 'pageY') - this.s.mouse.offset.y
         });
         // Find cursor's left position relative to the table
-        var tableNode = this.dt.table().node();
-        var tableOffset = $(tableNode).offset().left;
-        var cursorMouseLeft = this._cursorPosition(e, 'pageX') - tableOffset;
-        var cursorInlineStart;
+        const tableNode = this.dt.table().node();
+        let tableOffset = Dom.s(tableNode).offset().left;
+        let cursorMouseLeft = this._cursorPosition(e, 'pageX') - tableOffset;
+        let cursorInlineStart;
         if (this._isRtl()) {
-            var tableWidth = tableNode.clientWidth;
+            const tableWidth = tableNode.clientWidth;
             cursorInlineStart = tableWidth - cursorMouseLeft;
         }
         else {
             cursorInlineStart = cursorMouseLeft;
         }
-        var dropZone = this.s.dropZones.find(function (zone) {
+        let dropZone = this.s.dropZones.find(function (zone) {
             if (zone.inlineStart <= cursorInlineStart && cursorInlineStart <= zone.inlineStart + zone.width) {
                 return true;
             }
@@ -649,11 +688,10 @@ var ColReorder = /** @class */ (function () {
         if (!dropZone.self) {
             this._move(dropZone, cursorInlineStart);
         }
-    };
-    ColReorder.prototype._mouseUp = function (e) {
-        var _this = this;
-        $(document).off('.colReorder');
-        $(document.body).removeClass('dtcr-dragging');
+    }
+    _mouseUp(e) {
+        Dom.s(document).off('.colReorder');
+        Dom.s(document.body).classRemove('dtcr-dragging');
         if (this.dom.drag) {
             this.dom.drag.remove();
             this.dom.drag = null;
@@ -667,33 +705,33 @@ var ColReorder = /** @class */ (function () {
             this.s.mouse.target.on('click.dtcr', function (e) {
                 return false;
             });
-            setTimeout(function () {
-                _this.s.mouse.target.off('.dtcr');
+            setTimeout(() => {
+                this.s.mouse.target.off('.dtcr');
             }, 10);
         }
         if (this.s.scrollInterval) {
             clearInterval(this.s.scrollInterval);
         }
-        this.dt.cells('.dtcr-moving').nodes().to$().removeClass('dtcr-moving dtcr-moving-first dtcr-moving-last');
-    };
+        Dom.s(this.dt.cells('.dtcr-moving').nodes().toArray()).classRemove('dtcr-moving dtcr-moving-first dtcr-moving-last');
+    }
     /**
      * Shift columns around
      *
      * @param dropZone Where to move to
      * @param cursorInlineStart Cursor position, relative to the inline start (left or right) of the table
      */
-    ColReorder.prototype._move = function (dropZone, cursorInlineStart) {
-        var that = this;
+    _move(dropZone, cursorInlineStart) {
+        let that = this;
         this.dt.colReorder.move(this.s.mouse.targets, dropZone.colIdx);
         // Update the targets
-        this.s.mouse.targets = $(this.s.mouse.target)
+        this.s.mouse.targets = this.s.mouse.target
             .attr('data-dt-column')
             .split(',')
             .map(function (val) {
             return parseInt(val, 10);
         });
         this._regions(this.s.mouse.targets);
-        var visibleTargets = this.s.mouse.targets.filter(function (val) {
+        let visibleTargets = this.s.mouse.targets.filter(function (val) {
             return that.dt.column(val).visible();
         });
         // If the column being moved is smaller than the column it is replacing,
@@ -701,13 +739,13 @@ var ColReorder = /** @class */ (function () {
         // we might immediately be changing the column order as soon as it was placed.
         // Find the drop zone for the first in the list of targets - is its
         // left greater than the mouse position. If so, it needs correcting
-        var dz = this.s.dropZones.find(function (zone) {
+        let dz = this.s.dropZones.find(function (zone) {
             return zone.colIdx === visibleTargets[0];
         });
-        var dzIdx = this.s.dropZones.indexOf(dz);
+        let dzIdx = this.s.dropZones.indexOf(dz);
         if (dz.inlineStart > cursorInlineStart) {
-            var previousDiff = dz.inlineStart - cursorInlineStart;
-            var previousDz = this.s.dropZones[dzIdx - 1];
+            let previousDiff = dz.inlineStart - cursorInlineStart;
+            let previousDz = this.s.dropZones[dzIdx - 1];
             dz.inlineStart -= previousDiff;
             dz.width += previousDiff;
             if (previousDz) {
@@ -719,39 +757,39 @@ var ColReorder = /** @class */ (function () {
             return zone.colIdx === visibleTargets[visibleTargets.length - 1];
         });
         if (dz.inlineStart + dz.width < cursorInlineStart) {
-            var nextDiff = cursorInlineStart - (dz.inlineStart + dz.width);
-            var nextDz = this.s.dropZones[dzIdx + 1];
+            let nextDiff = cursorInlineStart - (dz.inlineStart + dz.width);
+            let nextDz = this.s.dropZones[dzIdx + 1];
             dz.width += nextDiff;
             if (nextDz) {
                 nextDz.inlineStart += nextDiff;
                 nextDz.width -= nextDiff;
             }
         }
-    };
+    }
     /**
      * Determine the boundaries for where drops can happen and where they would
      * insert into.
      */
-    ColReorder.prototype._regions = function (moveColumns) {
-        var that = this;
-        var dropZones = [];
-        var totalWidth = 0;
-        var negativeCorrect = 0;
-        var allowedColumns = this.dt.columns(this.c.columns).indexes().toArray();
-        var widths = this.dt.columns().widths();
+    _regions(moveColumns) {
+        let that = this;
+        let dropZones = [];
+        let totalWidth = 0;
+        let negativeCorrect = 0;
+        let allowedColumns = this.dt.columns(this.c.columns).indexes().toArray();
+        let widths = this.dt.columns().widths();
         // Each column is a drop zone
         this.dt.columns().every(function (colIdx, tabIdx, i) {
             if (!this.visible()) {
                 return;
             }
-            var columnWidth = widths[colIdx];
+            let columnWidth = widths[colIdx];
             // Check that we are allowed to move into this column - if not, need
             // to offset the widths
             if (!allowedColumns.includes(colIdx)) {
                 totalWidth += columnWidth;
                 return;
             }
-            var valid = validateMove(that.dt, moveColumns, colIdx);
+            let valid = validateMove(that.dt, moveColumns, colIdx);
             if (valid) {
                 // New drop zone. Note that it might have it's offset moved
                 // by the final condition in this logic set
@@ -778,32 +816,32 @@ var ColReorder = /** @class */ (function () {
         });
         this.s.dropZones = dropZones;
         // this._drawDropZones();
-    };
+    }
     /**
      * Check if the table is scrolling or not. It is it the `table` isn't the same for
      * the header and body parents.
      *
      * @returns
      */
-    ColReorder.prototype._isScrolling = function () {
+    _isScrolling() {
         return this.dt.table().body().parentNode !== this.dt.table().header().parentNode;
-    };
+    }
     /**
      * Set an interval clock that will check to see if the scrolling of the table body should be moved
      * as the mouse moves on the scroll (allowing a drag and drop to columns which aren't yet visible)
      */
-    ColReorder.prototype._scrollRegions = function () {
+    _scrollRegions() {
         if (!this._isScrolling()) {
             // Not scrolling - nothing to do
             return;
         }
-        var that = this;
-        var tableLeft = $(this.dt.table().container()).offset().left;
-        var tableWidth = $(this.dt.table().container()).outerWidth();
-        var mouseBuffer = 75;
-        var scrollContainer = this.dt.table().body().parentElement.parentElement;
+        let that = this;
+        let tableLeft = Dom.s(this.dt.table().container()).offset().left;
+        let tableWidth = Dom.s(this.dt.table().container()).width('outer');
+        let mouseBuffer = 75;
+        let scrollContainer = this.dt.table().body().parentElement.parentElement;
         this.s.scrollInterval = setInterval(function () {
-            var mouseLeft = that.s.mouse.absLeft;
+            let mouseLeft = that.s.mouse.absLeft;
             // On initial mouse down the mouse position can be -1, which we want to ignore
             if (mouseLeft === -1) {
                 return;
@@ -816,7 +854,7 @@ var ColReorder = /** @class */ (function () {
                 scrollContainer.scrollLeft += 5;
             }
         }, 25);
-    };
+    }
     // This is handy for debugging where the drop zones actually are!
     // private _drawDropZones () {
     // 	let dropZones = this.s.dropZones;
@@ -837,40 +875,19 @@ var ColReorder = /** @class */ (function () {
     // 		);
     // 	}
     // }
-    ColReorder.prototype._isRtl = function () {
-        return $(this.dt.table().node()).css('direction') === 'rtl';
-    };
-    ColReorder.defaults = {
-        columns: '',
-        enable: true,
-        headerRows: null,
-        order: null
-    };
-    ColReorder.version = '2.1.2';
-    return ColReorder;
-}());
+    _isRtl() {
+        return Dom.s(this.dt.table().node()).css('direction') === 'rtl';
+    }
+}
+ColReorder.defaults = {
+    columns: '',
+    enable: true,
+    headerRows: null,
+    order: null
+};
+ColReorder.version = '3.0.0-beta.1';
 
-/*! ColReorder 2.1.2
- * © SpryMedia Ltd - datatables.net/license
- */
-/**
- * @summary     ColReorder
- * @description Provide the ability to reorder columns in a DataTable
- * @version     2.1.2
- * @author      SpryMedia Ltd
- * @contact     datatables.net
- * @copyright   SpryMedia Ltd.
- *
- * This source file is free software, available under the following license:
- *   MIT license - http://datatables.net/license/mit
- *
- * This source file is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the license files for details.
- *
- * For details please refer to: http://www.datatables.net
- */
- // declare var DataTable: any;
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  * UI interaction class
  */
@@ -878,7 +895,7 @@ var ColReorder = /** @class */ (function () {
  * DataTables API integration
  */
 /** Enable mouse column reordering */
-DataTable.Api.register('colReorder.enable()', function (flag) {
+Api.register('colReorder.enable()', function (flag) {
     return this.iterator('table', function (ctx) {
         if (ctx._colReorder) {
             ctx._colReorder.enable(flag);
@@ -886,7 +903,7 @@ DataTable.Api.register('colReorder.enable()', function (flag) {
     });
 });
 /** Disable mouse column reordering */
-DataTable.Api.register('colReorder.disable()', function () {
+Api.register('colReorder.disable()', function () {
     return this.iterator('table', function (ctx) {
         if (ctx._colReorder) {
             ctx._colReorder.disable();
@@ -896,7 +913,7 @@ DataTable.Api.register('colReorder.disable()', function () {
 /**
  * Change the ordering of the columns in the DataTable.
  */
-DataTable.Api.register('colReorder.move()', function (from, to) {
+Api.register('colReorder.move()', function (from, to) {
     init(this);
     if (!Array.isArray(from)) {
         from = [from];
@@ -910,7 +927,7 @@ DataTable.Api.register('colReorder.move()', function (from, to) {
         finalise(this);
     });
 });
-DataTable.Api.register('colReorder.order()', function (set, original) {
+Api.register('colReorder.order()', function (set, original) {
     init(this);
     if (!set) {
         return this.context.length ? getOrder(this) : null;
@@ -919,7 +936,7 @@ DataTable.Api.register('colReorder.order()', function (set, original) {
         setOrder(this, set, original);
     });
 });
-DataTable.Api.register('colReorder.reset()', function () {
+Api.register('colReorder.reset()', function () {
     init(this);
     return this.tables().every(function () {
         var order = this.columns()
@@ -931,7 +948,7 @@ DataTable.Api.register('colReorder.reset()', function () {
         setOrder(this, order, true);
     });
 });
-DataTable.Api.register('colReorder.transpose()', function (idx, dir) {
+Api.register('colReorder.transpose()', function (idx, dir) {
     init(this);
     if (!dir) {
         dir = 'toCurrent';
@@ -942,11 +959,11 @@ DataTable.ColReorder = ColReorder;
 // Called when DataTables is going to load a state. That might be
 // before the table is ready (state saving) or after (state restoring).
 // Also note that it happens _before_ preInit (below).
-$(document).on('stateLoadInit.dt', function (e, settings, state) {
+Dom.s(document).on('stateLoadInit.dt', function (e, settings, state) {
     if (e.namespace !== 'dt') {
         return;
     }
-    var dt = new DataTable.Api(settings);
+    let dt = new Api(settings);
     if (state.colReorder && dt.columns().count() === state.colReorder.length) {
         if (dt.ready()) {
             // Table is fully loaded - do the column reordering here
@@ -964,7 +981,7 @@ $(document).on('stateLoadInit.dt', function (e, settings, state) {
             orderingIndexes(state.colReorder, state.order);
             // State's columns array - sort by restore index
             if (state.columns) {
-                for (var i = 0; i < state.columns.length; i++) {
+                for (let i = 0; i < state.columns.length; i++) {
                     state.columns[i]._cr_sort = state.colReorder[i];
                 }
                 state.columns.sort(function (a, b) {
@@ -974,16 +991,22 @@ $(document).on('stateLoadInit.dt', function (e, settings, state) {
         }
     }
 });
-$(document).on('preInit.dt', function (e, settings) {
+Dom.s(document).on('preInit.dt', function (e, settings) {
     if (e.namespace !== 'dt') {
         return;
     }
-    var init = settings.oInit.colReorder;
+    var init = settings.init.colReorder;
     var defaults = DataTable.defaults.colReorder;
     if (init || defaults) {
-        var opts = $.extend({}, defaults, init);
+        let opts = {};
+        if (util.is.plainObject(defaults)) {
+            util.object.assign(opts, defaults);
+        }
+        if (util.is.plainObject(init)) {
+            util.object.assign(opts, init);
+        }
         if (init !== false) {
-            var dt = new DataTable.Api(settings);
+            let dt = new DataTable.Api(settings);
             new ColReorder(dt, opts);
         }
     }
@@ -991,3 +1014,4 @@ $(document).on('preInit.dt', function (e, settings) {
 
 
 export default DataTable;
+
