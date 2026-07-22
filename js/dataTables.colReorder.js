@@ -1,4 +1,4 @@
-/*! ColReorder 3.0.0-beta.1 for DataTables
+/*! ColReorder 3.0.0 for DataTables
  * Copyright (c) SpryMedia Ltd - datatables.net/license
  */
 
@@ -926,7 +926,7 @@ ColReorder.defaults = {
     headerRows: null,
     order: null
 };
-ColReorder.version = '3.0.0-beta.1';
+ColReorder.version = '3.0.0';
 
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
