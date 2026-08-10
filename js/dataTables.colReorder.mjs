@@ -191,7 +191,8 @@ function move(dt, from, to) {
     // the search applies to, which needs to be updated, but also there is a
     // `columns` array for each property which must also be updated.
     util.object.each(settings.searches, (key, search) => {
-        let columns = transposeArray(search.columns, reverseIndexes);
+        var _a;
+        let columns = transposeArray((_a = search.columns) !== null && _a !== void 0 ? _a : [], reverseIndexes);
         // In case there is an overlap between those which have been reordered
         // and those still to be done, we need to use a name that indicates that
         // it has been reordered
@@ -660,8 +661,8 @@ class ColReorder {
         }
         // Position the element - we respect where in the element the click occurred
         this.dom.drag.css({
-            left: this._cursorPosition(e, 'pageX') - this.s.mouse.offset.x,
-            top: this._cursorPosition(e, 'pageY') - this.s.mouse.offset.y
+            left: `${this._cursorPosition(e, 'pageX') - this.s.mouse.offset.x}px`,
+            top: `${this._cursorPosition(e, 'pageY') - this.s.mouse.offset.y}px`
         });
         // Find cursor's left position relative to the table
         const tableNode = this.dt.table().node();
