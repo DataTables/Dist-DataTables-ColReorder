@@ -73,7 +73,7 @@ declare class ColReorder {
 }
 
 declare module 'datatables.net' {
-    interface Config {
+    interface Options {
         /**
          * ColReorder extension options
          */
